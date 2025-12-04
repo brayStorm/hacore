@@ -339,16 +339,30 @@ class AndroidTVFlowHandler(ConfigFlow, domain=DOMAIN):
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle a flow initiated by zeroconf."""
-        if user_input is not None:
-            try:
-                return await self._async_start_pair()
-            except (CannotConnect, ConnectionClosed):
-                return self.async_abort(reason="cannot_connect")
-        return self.async_show_form(
+        """Handle a flow initiated by zeroconf - show connection type menu."""
+        return self.async_show_menu(
             step_id="zeroconf_confirm",
+            menu_options=["zeroconf_remote", "zeroconf_adb"],
             description_placeholders={CONF_NAME: self.name},
         )
+
+    async def async_step_zeroconf_remote(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Set up device discovered via zeroconf using Remote Protocol."""
+        try:
+            return await self._async_start_pair()
+        except (CannotConnect, ConnectionClosed):
+            return self.async_abort(reason="cannot_connect")
+
+    async def async_step_zeroconf_adb(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Set up device discovered via zeroconf using ADB."""
+        # Pre-fill the host from zeroconf discovery and go to ADB setup
+        if user_input is None:
+            user_input = {CONF_HOST: self.host}
+        return await self.async_step_adb(user_input)
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]

@@ -11,15 +11,16 @@ from homeassistant.components.button import ButtonEntity, ButtonEntityDescriptio
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import AndroidTVConfigEntry
-from .entity import AndroidTVEntity, adb_decorator
+from . import AndroidTVADBRuntimeData, AndroidTVConfigEntry
+from .const import CONF_CONNECTION_TYPE, CONNECTION_TYPE_REMOTE
+from .entity import AndroidTVADBEntity, adb_decorator
 
 _LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 0
 
 # Type alias for press actions (can be sync or async)
-PressAction = Callable[["AndroidTVButtonEntity"], Union[None, Awaitable[None]]]
+PressAction = Callable[["AndroidTVADBButtonEntity"], Union[None, Awaitable[None]]]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -36,20 +37,31 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Android TV button entities based on a config entry."""
-    entities: list[AndroidTVButtonEntity] = []
+    connection_type = config_entry.data.get(CONF_CONNECTION_TYPE)
+
+    # Button entities are only available for ADB connections
+    # Remote protocol doesn't support ADB shell commands needed for find_remote/reboot
+    if connection_type == CONNECTION_TYPE_REMOTE:
+        return
+
+    runtime_data = config_entry.runtime_data
+    if not isinstance(runtime_data, AndroidTVADBRuntimeData):
+        return
+
+    entities: list[AndroidTVADBButtonEntity] = []
 
     for description in BUTTON_ENTITY_DESCRIPTIONS:
-        entities.append(AndroidTVButtonEntity(config_entry, description))
+        entities.append(AndroidTVADBButtonEntity(config_entry, description))
 
     async_add_entities(entities)
 
 
-async def _press_find_remote(entity: AndroidTVButtonEntity) -> None:
+async def _press_find_remote(entity: AndroidTVADBButtonEntity) -> None:
     """Press the find remote button."""
     await entity._find_remote()
 
 
-async def _press_reboot(entity: AndroidTVButtonEntity) -> None:
+async def _press_reboot(entity: AndroidTVADBButtonEntity) -> None:
     """Press the reboot button."""
     await entity._reboot()
 
@@ -74,8 +86,8 @@ BUTTON_ENTITY_DESCRIPTIONS: tuple[AndroidTVButtonEntityDescription, ...] = (
 )
 
 
-class AndroidTVButtonEntity(AndroidTVEntity, ButtonEntity):
-    """Android TV Button Entity."""
+class AndroidTVADBButtonEntity(AndroidTVADBEntity, ButtonEntity):
+    """Android TV Button Entity for ADB connection."""
 
     entity_description: AndroidTVButtonEntityDescription
 

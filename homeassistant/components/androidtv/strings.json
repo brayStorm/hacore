@@ -70,8 +70,18 @@
         "description": "Update the IP address of this previously configured Android TV device."
       },
       "zeroconf_confirm": {
-        "description": "Do you want to add the Android TV ({name}) to Home Assistant? It will turn on and a pairing code will be displayed on it that you will need to enter in the next screen.",
+        "menu_options": {
+          "zeroconf_remote": "Remote Protocol (recommended)",
+          "zeroconf_adb": "ADB (Android Debug Bridge)"
+        },
+        "description": "Choose how to connect to {name}. Remote Protocol is recommended for most users. ADB provides additional features like Find Remote and Reboot buttons but requires ADB debugging enabled on the device.",
         "title": "Discovered Android TV"
+      },
+      "zeroconf_remote": {
+        "title": "Remote Protocol"
+      },
+      "zeroconf_adb": {
+        "title": "ADB Connection"
       }
     }
   },
