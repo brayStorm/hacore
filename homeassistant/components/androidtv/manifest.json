@@ -1,6 +1,7 @@
 {
   "domain": "androidtv",
   "name": "Android TV",
+  "version": "1.0.0",
   "codeowners": ["@JeffLIrion", "@ollo69", "@tronikos", "@Drafteed"],
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/androidtv",
