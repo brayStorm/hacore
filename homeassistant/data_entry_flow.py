@@ -36,6 +36,8 @@ class FlowResultType(StrEnum):
     SHOW_PROGRESS = "progress"
     SHOW_PROGRESS_DONE = "progress_done"
     MENU = "menu"
+    TAG_WRITE = "tag_write"
+    TAG_WRITE_DONE = "tag_write_done"
 
 
 # Event that is fired when a flow is progressed via external or progress source.
@@ -49,6 +51,8 @@ FLOW_NOT_COMPLETE_STEPS = {
     FlowResultType.SHOW_PROGRESS,
     FlowResultType.SHOW_PROGRESS_DONE,
     FlowResultType.MENU,
+    FlowResultType.TAG_WRITE,
+    FlowResultType.TAG_WRITE_DONE,
 }
 
 
@@ -57,6 +61,7 @@ STEP_ID_OPTIONAL_STEPS = {
     FlowResultType.FORM,
     FlowResultType.MENU,
     FlowResultType.SHOW_PROGRESS,
+    FlowResultType.TAG_WRITE,
 }
 
 
@@ -144,6 +149,8 @@ class FlowResult(TypedDict, Generic[_FlowContextT, _HandlerT], total=False):
     required: bool
     sort: bool
     step_id: str
+    tag_id: str
+    tag_name: str | None
     title: str
     translation_domain: str
     type: FlowResultType
@@ -387,6 +394,7 @@ class FlowManager(abc.ABC, Generic[_FlowContextT, _FlowResultT, _HandlerT]):
         if cur_step["type"] in (
             FlowResultType.EXTERNAL_STEP,
             FlowResultType.SHOW_PROGRESS,
+            FlowResultType.TAG_WRITE,
         ):
             if cur_step["type"] == FlowResultType.EXTERNAL_STEP and result[
                 "type"
@@ -407,6 +415,15 @@ class FlowManager(abc.ABC, Generic[_FlowContextT, _FlowResultT, _HandlerT]):
                 raise ValueError(
                     "Show progress can only transition to show progress or show"
                     " progress done."
+                )
+            if cur_step["type"] == FlowResultType.TAG_WRITE and result[
+                "type"
+            ] not in (
+                FlowResultType.TAG_WRITE,
+                FlowResultType.TAG_WRITE_DONE,
+            ):
+                raise ValueError(
+                    "Tag write can only transition to tag write or tag write done."
                 )
 
             # If the result has changed from last result, fire event to update
@@ -882,6 +899,42 @@ class FlowHandler(Generic[_FlowContextT, _FlowResultT, _HandlerT]):
         if step_id is not None:
             flow_result["step_id"] = step_id
         return flow_result
+
+    @callback
+    def async_show_tag_write(
+        self,
+        *,
+        step_id: str | None = None,
+        tag_id: str,
+        tag_name: str | None = None,
+        description_placeholders: Mapping[str, str] | None = None,
+    ) -> _FlowResultT:
+        """Show a tag write step to the user.
+
+        This step instructs the frontend to trigger NFC tag writing on
+        the companion app.
+        """
+        flow_result = self._flow_result(
+            type=FlowResultType.TAG_WRITE,
+            flow_id=self.flow_id,
+            handler=self.handler,
+            tag_id=tag_id,
+            tag_name=tag_name,
+            description_placeholders=description_placeholders,
+        )
+        if step_id is not None:
+            flow_result["step_id"] = step_id
+        return flow_result
+
+    @callback
+    def async_tag_write_done(self, *, next_step_id: str) -> _FlowResultT:
+        """Mark the tag write done."""
+        return self._flow_result(
+            type=FlowResultType.TAG_WRITE_DONE,
+            flow_id=self.flow_id,
+            handler=self.handler,
+            step_id=next_step_id,
+        )
 
     @callback
     def async_remove(self) -> None:
