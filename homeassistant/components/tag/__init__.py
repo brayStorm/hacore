@@ -23,7 +23,15 @@ from homeassistant.helpers.typing import ConfigType, VolDictType
 from homeassistant.util import dt as dt_util, slugify
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DEFAULT_NAME, DEVICE_ID, DOMAIN, EVENT_TAG_SCANNED, LOGGER, TAG_ID
+from .const import (
+    DEFAULT_NAME,
+    DEVICE_ID,
+    DOMAIN,
+    EVENT_TAG_SCANNED,
+    EVENT_TAG_WRITE_REQUEST,
+    LOGGER,
+    TAG_ID,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -318,6 +326,31 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             )
         )
     await component.async_add_entities(entities)
+
+    async def async_write_tag(call) -> None:
+        """Handle the tag.write service call."""
+        tag_id = call.data[TAG_ID]
+        device_id = call.data.get(DEVICE_ID)
+        name = call.data.get(CONF_NAME)
+
+        hass.bus.async_fire(
+            EVENT_TAG_WRITE_REQUEST,
+            {TAG_ID: tag_id, CONF_NAME: name, DEVICE_ID: device_id},
+            context=call.context,
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        "write",
+        async_write_tag,
+        vol.Schema(
+            {
+                vol.Required(TAG_ID): cv.string,
+                vol.Optional(CONF_NAME): cv.string,
+                vol.Optional(DEVICE_ID): cv.string,
+            }
+        ),
+    )
 
     return True
 

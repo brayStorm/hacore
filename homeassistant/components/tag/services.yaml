@@ -1,0 +1,15 @@
+write:
+  fields:
+    tag_id:
+      required: true
+      example: "my-tag-id"
+      selector:
+        text:
+    name:
+      example: "My Tag"
+      selector:
+        text:
+    device_id:
+      example: "abc123"
+      selector:
+        device:

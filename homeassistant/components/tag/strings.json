@@ -11,5 +11,25 @@
       }
     }
   },
+  "services": {
+    "write": {
+      "name": "Write tag",
+      "description": "Requests a connected device to write an NFC tag.",
+      "fields": {
+        "tag_id": {
+          "name": "Tag ID",
+          "description": "The ID to write to the tag."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Optional name for the tag."
+        },
+        "device_id": {
+          "name": "Device",
+          "description": "The device that should write the tag."
+        }
+      }
+    }
+  },
   "title": "Tag"
 }
